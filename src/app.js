@@ -21,6 +21,16 @@ import {
 } from 'lucide'
 import { faker } from '@faker-js/faker'
 
+// Configure Monaco Editor for WebContainer environment
+// Use a simpler approach that doesn't rely on external workers
+self.MonacoEnvironment = {
+  getWorker: function (workerId, label) {
+    // Return undefined to disable web workers and run everything in main thread
+    // This is more reliable in WebContainer environments
+    return undefined;
+  }
+};
+
 class PythonEditor {
   constructor(container) {
     this.container = container
@@ -49,61 +59,45 @@ class PythonEditor {
   }
 
   createIcon(iconName, className = 'w-4 h-4') {
-    const iconMap = {
-      play: Play,
-      square: Square,
-      trash: Trash2,
-      share: Share2,
-      plus: Plus,
-      x: X,
-      save: Save,
-      download: Download,
-      upload: Upload,
-      settings: Settings,
-      moon: Moon,
-      sun: Sun,
-      file: FileText,
-      terminal: Terminal,
-      code: Code,
-      sparkles: Sparkles,
-      wand: Wand2,
+    const iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    iconSvg.setAttribute('class', className);
+    iconSvg.setAttribute('width', '24');
+    iconSvg.setAttribute('height', '24');
+    iconSvg.setAttribute('viewBox', '0 0 24 24');
+    iconSvg.setAttribute('fill', 'none');
+    iconSvg.setAttribute('stroke', 'currentColor');
+    iconSvg.setAttribute('stroke-width', '2');
+    iconSvg.setAttribute('stroke-linecap', 'round');
+    iconSvg.setAttribute('stroke-linejoin', 'round');
+
+    // Simple icon shapes - we'll use basic SVG paths
+    const iconPaths = {
+      play: 'm9 18 6-6-6-6v12z',
+      square: 'M3 3h18v18H3z',
+      trash: 'm3 6 18 0M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6',
+      share: 'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13',
+      plus: 'M12 5v14M5 12h14',
+      x: 'M18 6 6 18M6 6l12 12',
+      save: 'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z',
+      download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
+      upload: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
+      settings: 'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z',
+      moon: 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z',
+      sun: 'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 6.34 4.93 4.93M19.07 19.07l-1.41-1.41',
+      file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',
+      terminal: 'M4 17l6-6-6-6M12 19h8',
+      code: 'm16 18 6-6-6-6M8 6l-6 6 6 6',
+      sparkles: 'm12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3ZM5 3v4M3 5h4M6 18v4M4 20h4',
+      wand: 'M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M17.8 6.2 19 5M3 21l9-9M12.2 6.2 11 5'
     };
 
-    const iconNode = iconMap[iconName];
-
-    if (!iconNode) {
-      console.error(`Ikon "${iconName}" tidak ditemukan.`);
-      return null;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    if (iconPaths[iconName]) {
+      path.setAttribute('d', iconPaths[iconName]);
+      iconSvg.appendChild(path);
     }
 
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-
-    const defaultAttrs = {
-      class: className,
-      width: '24',
-      height: '24',
-      viewBox: '0 0 24 24',
-      fill: 'none',
-      stroke: 'currentColor',
-      'stroke-width': '2',
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round',
-    };
-
-    for (const key in defaultAttrs) {
-      svg.setAttribute(key, defaultAttrs[key]);
-    }
-
-    iconNode.forEach(childNode => {
-      const [tag, attrs] = childNode;
-      const element = document.createElementNS('http://www.w3.org/2000/svg', tag);
-      for (const key in attrs) {
-        element.setAttribute(key, attrs[key]);
-      }
-      svg.appendChild(element);
-    });
-
-    return svg;
+    return iconSvg;
   }
 
   createLayout() {
@@ -349,7 +343,7 @@ class PythonEditor {
   }
 
   setupEditor() {
-    // Configure Monaco Editor
+    // Configure Monaco Editor with simpler configuration
     monaco.editor.defineTheme('custom-dark', {
       base: 'vs-dark',
       inherit: true,
@@ -362,6 +356,7 @@ class PythonEditor {
       }
     })
 
+    // Create the editor with optimized settings for WebContainer
     this.editor = monaco.editor.create(document.getElementById('editor-container'), {
       value: this.files[this.currentFile],
       language: 'python',
@@ -375,16 +370,23 @@ class PythonEditor {
       tabSize: 4,
       insertSpaces: true,
       wordWrap: 'off',
-      minimap: { enabled: true },
+      minimap: { enabled: false }, // Disable minimap for better performance
       suggestOnTriggerCharacters: true,
       acceptSuggestionOnEnter: 'on',
       acceptSuggestionOnCommitCharacter: true,
-      quickSuggestions: true,
+      quickSuggestions: false, // Disable for better performance
       folding: true,
       foldingStrategy: 'indentation',
       showFoldingControls: 'always',
       bracketMatching: 'always',
       autoIndent: 'full',
+      // Disable some features that might cause worker issues
+      hover: { enabled: false },
+      parameterHints: { enabled: false },
+      occurrencesHighlight: false,
+      selectionHighlight: false,
+      codeLens: false,
+      contextmenu: false
     })
 
     // Update cursor position
@@ -491,14 +493,16 @@ class PythonEditor {
     document.getElementById('copy-url').addEventListener('click', () => {
       const urlInput = document.getElementById('share-url')
       urlInput.select()
-      navigator.clipboard.writeText(urlInput.value)
-      
-      const copyBtn = document.getElementById('copy-url')
-      const originalText = copyBtn.textContent
-      copyBtn.textContent = 'Tersalin!'
-      setTimeout(() => {
-        copyBtn.textContent = originalText
-      }, 2000)
+      navigator.clipboard.writeText(urlInput.value).then(() => {
+        const copyBtn = document.getElementById('copy-url')
+        const originalText = copyBtn.textContent
+        copyBtn.textContent = 'Tersalin!'
+        setTimeout(() => {
+          copyBtn.textContent = originalText
+        }, 2000)
+      }).catch(err => {
+        console.error('Failed to copy: ', err)
+      })
     })
 
     // Close modals when clicking outside
@@ -528,7 +532,7 @@ class PythonEditor {
       tab.innerHTML = `
         <span>${filename}</span>
         ${Object.keys(this.files).length > 1 ? `
-          <button class="text-gray-400 hover:text-white ml-1" onclick="event.stopPropagation(); window.editor.removeFile('${filename}')">
+          <button class="text-gray-400 hover:text-white ml-1 remove-file-btn" data-filename="${filename}">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
@@ -536,9 +540,20 @@ class PythonEditor {
         ` : ''}
       `
       
-      tab.addEventListener('click', () => {
-        this.switchFile(filename)
+      tab.addEventListener('click', (e) => {
+        if (!e.target.closest('.remove-file-btn')) {
+          this.switchFile(filename)
+        }
       })
+
+      // Add event listener for remove button
+      const removeBtn = tab.querySelector('.remove-file-btn')
+      if (removeBtn) {
+        removeBtn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          this.removeFile(filename)
+        })
+      }
       
       tabsContainer.appendChild(tab)
     })
